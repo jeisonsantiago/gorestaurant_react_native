@@ -49,17 +49,57 @@ const Dashboard: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<
     number | undefined
   >();
+
   const [searchValue, setSearchValue] = useState('');
 
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
     // Navigate do ProductDetails page
+
+    // const loadedFood = await api.get<Food[]>(`/foods`, {
+    //   params: {
+    //     id,
+    //   },
+    // });
+
+    // const food = loadedFood.data[0];
+    // console.log(food);
+    navigation.navigate(`FoodDetails`, {
+      id,
+    });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
       // Load Foods from API
+      try {
+        let loadedFoods;
+
+        if (searchValue !== '') {
+          loadedFoods = await api.get<Food[]>(`/foods`, {
+            params: { name_like: searchValue },
+          });
+        } else if (selectedCategory) {
+          loadedFoods = await api.get<Food[]>(`/foods`, {
+            params: { category_like: selectedCategory },
+          });
+        } else {
+          loadedFoods = await api.get<Food[]>('/foods');
+        }
+
+        console.log(loadedFoods);
+
+        const foodsData = loadedFoods.data.map(food => {
+          const fd = food;
+          fd.formattedPrice = formatValue(food.price);
+          return fd;
+        });
+
+        setFoods(foodsData);
+      } catch (error) {
+        console.log(error.message);
+      }
     }
 
     loadFoods();
@@ -68,6 +108,12 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     async function loadCategories(): Promise<void> {
       // Load categories from API
+      try {
+        const loadedCategories = await api.get<Category[]>('/categories');
+        setCategories(loadedCategories.data);
+      } catch (error) {
+        console.log(error.message);
+      }
     }
 
     loadCategories();
@@ -75,6 +121,11 @@ const Dashboard: React.FC = () => {
 
   function handleSelectCategory(id: number): void {
     // Select / deselect category
+    if (selectedCategory === id) {
+      setSelectedCategory(0);
+    } else {
+      setSelectedCategory(id);
+    }
   }
 
   return (
